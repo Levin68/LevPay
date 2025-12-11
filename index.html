@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <!-- CSP: izinkan gambar dari server kamu + data URL + provider QR eksternal + Orkut -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://api.qrserver.com https://chart.googleapis.com https://orkut.ftvpn.me; connect-src 'self' https://orkut.ftvpn.me; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline';">
+
+  <title>LevPay - Bayar via QRIS</title>
+
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="icon" href="assets/icons/favicon.ico" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/animations.css"/>
+</head>
+<body class="min-h-screen">
+  <div id="confettiContainer" class="confetti-container hidden"></div>
+
+  <header class="bg-surface shadow-lg p-3">
+    <div class="flex items-center justify-between w-full">
+      <a id="headerChannelBtn" class="btn-chip btn-channel" href="#">
+        <img src="assets/images/icons/wa.png" class="w-4 h-4" alt="WhatsApp Channel">
+        <span>Channel</span>
+      </a>
+
+      <div class="flex flex-col items-center">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-sm">L</span>
+          </div>
+          <span class="text-xl font-bold">LevPay</span>
+        </div>
+        <button id="themeToggleBtn" class="theme-switch mt-2" aria-label="Toggle theme">
+          <span class="track"></span>
+          <span class="knob">
+            <svg class="icon sun" viewBox="0 0 24 24"><path fill="currentColor" d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM1 13h3v-2H1v2zm10-9h2V1h-2v3zm7.04 1.66l1.79-1.8-1.41-1.41-1.8 1.79 1.42 1.42zM17 13h3v-2h-3v2zm-5 8h2v-3h-2v3zM4.96 18.34l-1.79 1.8 1.41 1.41 1.8-1.79-1.42-1.42zM20 17.24l1.8 1.79 1.41-1.41-1.79-1.8-1.42 1.42zM12 6a6 6 0 100 12 6 6 0 000-12z"/></svg>
+            <svg class="icon moon" viewBox="0 0 24 24"><path fill="currentColor" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          </span>
+        </button>
+      </div>
+
+      <a id="headerAdminBtn" class="btn-chip btn-admin" href="#">
+        <img src="assets/images/icons/wa.png" class="w-4 h-4" alt="Admin WhatsApp">
+        <span>Admin</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="container mx-auto px-4 py-8">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold mb-4">Bayar via QRIS — nominal suka-suka kamu</h1>
+      <p class="text-secondary mb-6">Satu QR untuk OVO, DANA, GoPay, ShopeePay, & bank. Aman, cepat, otomatis terdeteksi.</p>
+
+      <div class="bg-surface rounded-xl p-6 max-w-md mx-auto shadow-lg transition-all">
+        <div class="mb-4">
+          <label class="block text-left mb-2 text-sm font-medium" for="amount">Nominal Pembayaran (IDR)</label>
+          <input id="amount" type="number" min="1" step="1" placeholder="Masukkan nominal..."
+                 class="w-full bg-surface-elevated border border-custom rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <div class="flex flex-wrap gap-2 mb-4 justify-center">
+          <button class="preset-chip bg-surface-elevated hover:bg-blue-600 px-3 py-2 rounded-lg text-sm transition-all hover:scale-95" data-amount="3000">3K</button>
+          <button class="preset-chip bg-surface-elevated hover:bg-blue-600 px-3 py-2 rounded-lg text-sm transition-all hover:scale-95" data-amount="5000">5K</button>
+          <button class="preset-chip bg-surface-elevated hover:bg-blue-600 px-3 py-2 rounded-lg text-sm transition-all hover:scale-95" data-amount="10000">10K</button>
+          <button class="preset-chip bg-surface-elevated hover:bg-blue-600 px-3 py-2 rounded-lg text-sm transition-all hover:scale-95" data-amount="25000">25K</button>
+          <button class="preset-chip bg-surface-elevated hover:bg-blue-600 px-3 py-2 rounded-lg text-sm transition-all hover:scale-95" data-amount="50000">50K</button>
+        </div>
+
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-secondary">Template Favorit:</span>
+            <button id="addTemplateBtn" class="text-blue-400 hover:text-blue-300 text-sm transition-all">+ Tambah</button>
+          </div>
+          <div id="templateChips" class="flex flex-wrap gap-2 min-h-[32px]"></div>
+        </div>
+
+        <button id="createQRBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2">
+          <span id="createQRBtnText">Buat QR</span>
+          <span id="createQRBtnLoading" class="hidden flex items-center space-x-2">
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.37 0 0 5.37 0 12h4z"/>
+            </svg>
+            <span>Membuat QR...</span>
+          </span>
+        </button>
+
+        <div id="errorMessage" class="text-red-400 text-sm mt-2 hidden"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-8 max-w-md mx-auto">
+      <button id="historyBtn" class="bg-surface-elevated hover:bg-purple-600 px-4 py-3 rounded-lg font-medium transition-all hover:scale-95 flex items-center justify-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>Riwayat</span>
+      </button>
+      <button id="dashboardBtn" class="bg-surface-elevated hover:bg-indigo-600 px-4 py-3 rounded-lg font-medium transition-all hover:scale-95 flex items-center justify-center space-x-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2z"></path></svg>
+        <span>Dashboard</span>
+      </button>
+    </div>
+
+    <div id="dashboardStats" class="hidden mb-8">
+      <h2 class="text-2xl font-bold mb-6 text-center">Dashboard Statistik</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="stat-card rounded-xl p-6 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-white/80">Total Transaksi</p>
+              <p class="text-2xl font-bold" id="totalTransactions">0</p>
+            </div>
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+          </div>
+        </div>
+
+        <div class="stat-card rounded-xl p-6 text-white" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-white/80">Total Amount</p>
+              <p class="text-2xl font-bold" id="totalAmount">Rp 0</p>
+            </div>
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path></svg>
+          </div>
+        </div>
+
+        <div class="stat-card rounded-xl p-6 text-white" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-white/80">Success Rate</p>
+              <p class="text-2xl font-bold" id="successRate">0%</p>
+            </div>
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-surface rounded-xl p-6 mb-8">
+      <h2 class="text-xl font-bold mb-4 text-center">Cara Kerja (3 Langkah)</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="text-center"><div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">1</div><h3 class="font-semibold mb-1">Buat QR</h3><p class="text-sm text-secondary">Masukkan nominal dan buat kode QR</p></div>
+        <div class="text-center"><div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">2</div><h3 class="font-semibold mb-1">Scan & Bayar</h3><p class="text-sm text-secondary">Scan QR dengan aplikasi e-wallet</p></div>
+        <div class="text-center"><div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">3</div><h3 class="font-semibold mb-1">Terekam Otomatis</h3><p class="text-sm text-secondary">Pembayaran masuk ke riwayat transaksi</p></div>
+      </div>
+    </div>
+
+    <div class="bg-surface rounded-xl p-6 mb-20">
+      <h2 class="text-xl font-bold mb-4 text-center">Metode Pembayaran</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center bg-surface-elevated rounded-lg p-4 hover:bg-purple-600 transition-all">
+          <img src="assets/images/wallet-logo/ovo.jpg" alt="OVO" class="w-12 h-12 mx-auto mb-2 rounded-lg">
+          <h3 class="font-semibold text-sm">OVO</h3><p class="text-xs text-secondary">Support by QRIS</p>
+        </div>
+        <div class="text-center bg-surface-elevated rounded-lg p-4 hover:bg-blue-600 transition-all">
+          <img src="assets/images/wallet-logo/dana.jpeg" alt="DANA" class="w-12 h-12 mx-auto mb-2 rounded-lg">
+          <h3 class="font-semibold text-sm">DANA</h3><p class="text-xs text-secondary">Support by QRIS</p>
+        </div>
+        <div class="text-center bg-surface-elevated rounded-lg p-4 hover:bg-green-600 transition-all">
+          <img src="assets/images/wallet-logo/gopay.jpg" alt="GoPay" class="w-12 h-12 mx-auto mb-2 rounded-lg">
+          <h3 class="font-semibold text-sm">GoPay</h3><p class="text-xs text-secondary">Support by QRIS</p>
+        </div>
+        <div class="text-center bg-surface-elevated rounded-lg p-4 hover:bg-orange-600 transition-all">
+          <img src="assets/images/wallet-logo/shopee.png" alt="ShopeePay" class="w-12 h-12 mx-auto mb-2 rounded-lg">
+          <h3 class="font-semibold text-sm">ShopeePay</h3><p class="text-xs text-secondary">Support by QRIS</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="sticky-cta fixed bottom-0 left-0 right-0 bg-surface p-3 border-t border-custom md:hidden">
+    <div class="flex gap-2">
+      <button id="stickyHistoryBtn"
+        class="bg-surface-elevated hover:bg-purple-600 px-3 py-3 rounded-lg font-medium transition-all hover:scale-95 flex-shrink-0"
+        aria-label="Riwayat">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </button>
+
+      <button id="stickyCreateQRBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold transition-all active:scale-95">
+        Buat QR (Nominal Custom)
+      </button>
+    </div>
+  </div>
+
+  <div id="bottomSheetBackdrop" class="bottom-sheet-backdrop"></div>
+
+  <div id="historyBottomSheet" class="bottom-sheet">
+    <div class="bottom-sheet-handle"></div>
+    <div class="px-6 pb-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-bold">Riwayat Transaksi</h3>
+        <button id="closeHistorySheet" class="text-secondary hover:text-primary text-2xl transition-all">&times;</button>
+      </div>
+
+      <div id="historyLoading" class="hidden space-y-3">
+        <div class="bg-surface-elevated rounded-lg p-4">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <div class="h-4 bg-surface skeleton rounded w-32 mb-2"></div>
+              <div class="h-3 bg-surface skeleton rounded w-24"></div>
+            </div>
+            <div class="text-right">
+              <div class="h-4 bg-surface skeleton rounded w-20 mb-2"></div>
+              <div class="h-3 bg-surface skeleton rounded w-16"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="historyContainer">
+        <div id="historyList"></div>
+        <div id="emptyHistory" class="text-center text-secondary py-8 hidden">
+          <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <p>Belum ada transaksi</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="paymentBottomSheet" class="bottom-sheet">
+    <div class="bottom-sheet-handle"></div>
+    <div class="px-6 pb-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-bold flex items-center space-x-2">
+          <span>Pembayaran QRIS</span>
+          <div id="autoRefreshIndicator" class="w-2 h-2 bg-green-500 rounded-full animate-pulse hidden"></div>
+        </h3>
+        <button id="closePaymentSheet" class="text-secondary hover:text-primary text-2xl transition-all">&times;</button>
+      </div>
+
+      <div id="progressiveLoading" class="mb-6 hidden">
+        <div class="space-y-3">
+          <div class="progress-step" id="step1"><div class="step-icon pending" id="stepIcon1">1</div><span class="text-sm">Menghubungkan ke server...</span></div>
+          <div class="progress-step" id="step2"><div class="step-icon pending" id="stepIcon2">2</div><span class="text-sm">Membuat QR Code...</span></div>
+          <div class="progress-step" id="step3"><div class="step-icon pending" id="stepIcon3">3</div><span class="text-sm">Menyimpan ke galeri...</span></div>
+        </div>
+      </div>
+
+      <div id="qrContainer" class="bg-white rounded-lg p-4 mb-4 text-center relative cursor-pointer transition-all hidden" onclick="zoomQR()">
+        <img id="qrImage" class="w-48 h-48 mx-auto rounded-lg mb-4" alt="QR Code untuk pembayaran QRIS">
+        <p class="text-xs text-gray-500">Tap untuk perbesar QR</p>
+      </div>
+
+      <div id="transactionInfo" class="bg-surface-elevated rounded-lg p-4 mb-4 hidden">
+        <div class="flex justify-between mb-2"><span class="text-secondary">Order ID:</span><span id="orderId" class="font-mono text-sm cursor-pointer hover:bg-blue-500 hover:text-white px-2 py-1 rounded transition-all" ondblclick="copyOrderId()" title="Double tap to copy"></span></div>
+        <div class="flex justify-between mb-2"><span class="text-secondary">Reference:</span><span id="referenceId" class="font-mono text-sm"></span></div>
+        <div class="flex justify-between mb-2"><span class="text-secondary">Nominal:</span><span id="modalAmount" class="font-semibold"></span></div>
+        <div class="flex justify-between"><span class="text-secondary">Berlaku hingga:</span><span id="countdown" class="font-mono text-yellow-400"></span></div>
+        <p class="text-xs text-secondary mt-2 opacity-70">💡 Double tap Order ID untuk copy</p>
+      </div>
+
+      <div id="statusBox" class="bg-green-900 border border-green-700 rounded-lg p-4 mb-4 hidden">
+        <div class="text-green-300 mb-4">
+          <div class="flex items-center space-x-2 mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div><strong>Pembayaran Berhasil! 🎉</strong><br/><span class="text-sm">Transaksi sudah tercatat di Riwayat.</span></div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="success-step" style="animation-delay:.2s"><div class="flex items-center space-x-3"><div class="flex-shrink-0"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div><div><strong>Langkah 1:</strong> Screenshot halaman ini sebagai bukti pembayaran</div></div></div>
+            <div class="success-step" style="animation-delay:.4s"><div class="flex items-center space-x-3"><div class="flex-shrink-0"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967"/></svg></div><div><strong>Langkah 2:</strong> Hubungi admin untuk konfirmasi pembayaran</div></div></div>
+            <button id="contactAdminBtn" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg font-medium transition-all hover:scale-95 flex items-center justify-center space-x-2 mt-4">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967"/></svg>
+              <span>💬 Hubungi Admin</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="expiredBox" class="bg-red-900 border border-red-700 rounded-lg p-4 mb-4 hidden">
+        <div class="text-red-300 flex items-center space-x-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div><strong>QR kedaluwarsa.</strong><br/><span class="text-sm">Silakan buat QR baru.</span></div>
+        </div>
+      </div>
+
+      <div id="actionButtons" class="space-y-3 hidden">
+        <button id="downloadQRBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition-all hover:scale-95 flex items-center justify-center space-x-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          <span>Download QR</span>
+        </button>
+        <button id="printQRBtn" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg font-medium transition-all hover:scale-95 flex items-center justify-center space-x-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          <span>Print QR</span>
+        </button>
+        <button id="shareWhatsAppBtn" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg font-medium transition-all hover:scale-95 flex items-center justify-center space-x-2">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967"/></svg>
+                    <span>Share via WhatsApp</span>
+        </button>
+        <button id="modalChannelBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition-all hover:scale-95 flex items-center justify-center space-x-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+          <span>Ikuti Channel</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addTemplateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-surface rounded-xl max-w-sm w-full transition-all">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-bold">Tambah Template</h3>
+          <button id="closeTemplateBtn" class="text-secondary hover:text-primary text-2xl transition-all">&times;</button>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Nominal (IDR)</label>
+            <input id="templateAmount" type="number" min="1" step="1" class="w-full bg-surface-elevated border border-custom rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500"/>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Label</label>
+            <input id="templateLabel" type="text" placeholder="Contoh: Uang Makan" class="w-full bg-surface-elevated border border-custom rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500"/>
+          </div>
+          <button id="saveTemplateBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-semibold transition-all hover:scale-95">Simpan Template</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="qrZoomModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center p-4 z-50" onclick="closeQRZoom()">
+    <div class="relative">
+      <img id="qrZoomImage" class="max-w-full max-h-full rounded-lg shadow-2xl" alt="QR Code diperbesar">
+      <button onclick="downloadQR()" class="absolute top-4 right-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white font-medium transition-all hover:scale-95">Download</button>
+      <button onclick="printQR()" class="absolute top-4 right-24 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white font-medium transition-all hover:scale-95">Print</button>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed bottom-20 left-4 right-4 z-50 md:bottom-4 md:left-auto md:right-4 md:w-80"></div>
+
+  <div id="printTemplate" class="printable hidden">
+    <div style="text-align:center;padding:20px;">
+      <h1 style="margin-bottom:20px;">LevPay - QR Payment</h1>
+      <img id="printQRImage" style="width:300px;height:300px;margin:20px auto;display:block;" alt="QR Code"/>
+      <div style="margin-top:20px;">
+        <p><strong>Order ID:</strong> <span id="printOrderId"></span></p>
+        <p><strong>Amount:</strong> <span id="printAmount"></span></p>
+        <p><strong>Date:</strong> <span id="printDate"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="bg-surface py-8 mt-16">
+    <div class="container mx-auto px-4 text-center">
+      <p class="text-secondary mb-4">© <span id="currentYear"></span> LevPay. Semua hak dilindungi.</p>
+      <div class="flex justify-center space-x-4">
+        <a id="footerChannelBtn" class="text-blue-400 hover:text-blue-300 transition-all" href="#">Channel WhatsApp</a>
+        <a id="footerWhatsAppBtn" class="text-blue-400 hover:text-blue-300 transition-all" href="#">Hubungi Kami</a>
+      </div>
+      <div class="mt-4 text-xs text-secondary opacity-70">
+        <p>Auto-Save Gallery • Bottom Sheet • Progressive Loading • Dark Mode</p>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- App scripts -->
+  <script src="js/config.js"></script>
+
+  <!-- OVERRIDE: pakai Orkut sebagai backend (tanpa sisa Xendit/localhost/vercel) -->
+  <script>
+    window.CONFIG = Object.assign({}, window.CONFIG || {}, {
+      API_BASE: "https://orkut.ftvpn.me",
+      API_PREFIX: "/api",
+      DEMO_MODE: false,
+      USE_CORS_PROXY: false,
+      CORS_PROXY: window.CONFIG?.CORS_PROXY || ""
+    });
+  </script>
+
+  <script src="js/utils.js"></script>
+  <script src="js/script.js"></script>
+
+  <!-- Tombol flush cache → buka /?flush=1 sekali untuk bersih2 -->
+  <script>
+    (async function () {
+      if (!location.search.includes('flush=1')) return;
+      try {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+        alert('Cache & SW dibersihkan. Halaman akan direload.');
+        location.replace(location.pathname);
+      } catch (e) {
+        console.error(e);
+        alert('Gagal bersihkan cache: ' + e.message);
+      }
+    })();
+  </script>
+
+  <!-- Console di HP (opsional, aktif kalau ?debug atau #debug) -->
+  <script>
+    (function () {
+      var enable = location.search.includes('debug') || location.hash.includes('#debug');
+      if (!enable) return;
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda';
+      s.onload = function () { eruda.init(); };
+      document.body.appendChild(s);
+    })();
+  </script>
+
+  <!-- Service worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js?v=5.3');
+    }
+  </script>
+</body>
+</html>
