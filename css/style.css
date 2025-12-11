@@ -1,0 +1,151 @@
+:root {
+  --bg-primary:#0f172a; --bg-secondary:#1e293b; --bg-tertiary:#334155;
+  --text-primary:#f8fafc; --text-secondary:#cbd5e1; --border-color:#475569;
+}
+[data-theme="light"]{
+  --bg-primary:#ffffff; --bg-secondary:#f8fafc; --bg-tertiary:#e2e8f0;
+  --text-primary:#0f172a; --text-secondary:#475569; --border-color:#d1d5db;
+}
+
+body{ background:var(--bg-primary); color:var(--text-primary); transition:all .3s ease; }
+.bg-surface{ background:var(--bg-secondary); }
+.bg-surface-elevated{ background:var(--bg-tertiary); }
+.text-secondary{ color:var(--text-secondary); }
+.border-custom{ border-color:var(--border-color); }
+
+/* Bottom Sheet */
+.bottom-sheet{ position:fixed; bottom:0; left:0; right:0; background:var(--bg-secondary);
+  border-radius:24px 24px 0 0; transform:translateY(100%);
+  transition:transform .4s cubic-bezier(.2,0,0,1); z-index:50; max-height:90vh; overflow-y:auto; }
+.bottom-sheet.active{ transform:translateY(0); }
+.bottom-sheet-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(4px);
+  opacity:0; transition:opacity .3s ease; z-index:49; pointer-events:none; }
+.bottom-sheet-backdrop.active{ opacity:1; pointer-events:auto; }
+.bottom-sheet-handle{ width:40px; height:4px; background:var(--border-color); border-radius:2px; margin:12px auto 20px; }
+
+/* Cards/Stats */
+.stat-card{ background:linear-gradient(135deg,#667eea 0%,#764ba2 100%); transition:all .3s ease; }
+.stat-card:hover{ transform:translateY(-4px); box-shadow:0 20px 40px rgba(0,0,0,.1); }
+
+/* (legacy) simple toggle (tidak dipakai) */
+.theme-toggle{ width:60px; height:30px; background:var(--bg-tertiary); border-radius:15px; border:2px solid var(--border-color);
+  cursor:pointer; transition:all .3s ease; position:relative; }
+.theme-toggle::before{ content:""; position:absolute; top:2px; left:2px; width:22px; height:22px; background:var(--text-primary); border-radius:50%; transition:all .3s ease; }
+[data-theme="light"] .theme-toggle::before{ transform:translateX(26px); }
+
+/* Progress steps */
+.progress-step{ display:flex; align-items:center; padding:12px 0; opacity:.3; transition:all .5s ease; }
+.progress-step.active{ opacity:1; } .progress-step.completed{ opacity:.7; }
+.step-icon{ width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; margin-right:12px; transition:all .3s ease; }
+.step-icon.pending{ background:var(--bg-tertiary); color:var(--text-secondary); }
+.step-icon.active{ background:#3b82f6; color:#fff; animation:pulse-icon 1s infinite; }
+.step-icon.completed{ background:#10b981; color:#fff; }
+
+/* Skeleton */
+.skeleton{ animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite; }
+
+/* Success guide */
+.success-step{ background:linear-gradient(135deg,#10b981 0%,#059669 100%); border-radius:12px; padding:16px; margin-bottom:12px; color:#fff; transform:translateX(-20px); opacity:0; animation:slideInSuccess .6s ease forwards; }
+
+/* Print */
+@media print{ body *{visibility:hidden;} .printable,.printable *{visibility:visible;} .printable{position:absolute; left:0; top:0; width:100%;}}
+
+/* Transitions */
+.transition-all{ transition:all .3s ease; }
+.hover\:scale-95:hover{ transform:scale(.95); }
+
+/* ===== Chips header: ukuran sama, palet ungu/biru (lebih kecil) ===== */
+.btn-chip{
+  display:flex; align-items:center; gap:.5rem; justify-content:center;
+  width:108px; padding:.38rem .6rem; border-radius:.7rem;
+  color:#fff; font-size:.82rem; font-weight:700; letter-spacing:.1px;
+  transition:transform .14s ease, filter .14s ease, box-shadow .14s ease;
+  box-shadow:0 8px 18px rgba(0,0,0,.18);
+}
+.btn-chip:hover{ transform:translateY(-1px) scale(.985); filter:brightness(1.05); }
+.btn-channel{
+  background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 55%,#2563eb 100%);
+  box-shadow:0 8px 22px rgba(79,70,229,.22);
+}
+.btn-admin{
+  background:linear-gradient(135deg,#a21caf 0%,#9333ea 50%,#3b82f6 100%);
+  box-shadow:0 8px 22px rgba(147,51,234,.22);
+}
+
+/* ===== Fancy theme switch (ikon moon/sun) ===== */
+.theme-switch{
+  position:relative; width:72px; height:36px; border-radius:9999px;
+  border:2px solid var(--border-color); overflow:hidden; isolation:isolate;
+  background:linear-gradient(135deg, rgba(59,130,246,.22), rgba(147,51,234,.22));
+  box-shadow:inset 0 0 12px rgba(0,0,0,.25);
+}
+.theme-switch .track{ position:absolute; inset:0; }
+.theme-switch .knob{
+  position:absolute; top:3px; left:3px; width:30px; height:30px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; z-index:1;
+  background: radial-gradient(circle at 30% 30%, #1f2937, #0b1020);
+  box-shadow:0 6px 14px rgba(0,0,0,.35), 0 0 10px rgba(147,51,234,.28);
+  transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
+}
+.theme-switch .icon{ width:18px; height:18px; position:absolute; transition:all .22s ease; }
+.theme-switch .sun{ opacity:0; transform:scale(.6) rotate(-20deg); color:#f59e0b; }
+.theme-switch .moon{ opacity:1; transform:scale(1); color:#93c5fd; }
+[data-theme="light"] .theme-switch .knob{
+  transform:translateX(36px);
+  background: radial-gradient(circle at 30% 30%, #ffffff, #eaeaea);
+  box-shadow:0 6px 14px rgba(0,0,0,.22), 0 0 12px rgba(59,130,246,.32);
+}
+[data-theme="light"] .theme-switch .sun{ opacity:1; transform:scale(1) rotate(0); }
+[data-theme="light"] .theme-switch .moon{ opacity:0; transform:scale(.6) rotate(20deg); }
+
+/* ===== UX: biar klik responsif & layer rapi ===== */
+button, a { touch-action: manipulation; }      /* ilangin delay klik mobile */
+.sticky-cta { z-index: 45; }                   /* di bawah bottom-sheet (z50) */
+
+/* Kecilkan tombol Sticky CTA */
+.sticky-cta button { padding:.7rem .9rem !important; font-size:.95rem !important; }
+
+/* Shake untuk input invalid */
+@keyframes lev-shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+.shake{ animation:lev-shake .45s; }
+
+/* ====== Tambahan supaya semua efek JS aktif (TIDAK mengganti yang ada) ====== */
+
+/* Confetti */
+.confetti-container{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:60; }
+.confetti{
+  position:absolute; top:-10px; width:8px; height:14px; border-radius:2px;
+  opacity:0.95; animation:confetti-fall linear forwards;
+}
+@keyframes confetti-fall{
+  0%{ transform:translateY(-10px) rotate(0deg); }
+  100%{ transform:translateY(110vh) rotate(540deg); }
+}
+
+/* Toast enter/exit */
+.toast-enter{ animation:toastIn .18s ease-out; }
+.toast-exit{ animation:toastOut .18s ease-in forwards; }
+@keyframes toastIn{
+  from{ opacity:0; transform:translateY(6px) scale(0.98); }
+  to{ opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes toastOut{
+  to{ opacity:0; transform:translateY(6px) scale(0.98); }
+}
+
+/* Skeleton pulse */
+@keyframes pulse{
+  0%,100%{ opacity:.5; }
+  50%{ opacity:1; }
+}
+
+/* Step icon pulse */
+@keyframes pulse-icon{
+  0%,100%{ box-shadow:0 0 0 0 rgba(59,130,246,.6); }
+  50%{ box-shadow:0 0 0 6px rgba(59,130,246,0); }
+}
+
+/* Success slide-in */
+@keyframes slideInSuccess{
+  to{ transform:translateX(0); opacity:1; }
+  }
